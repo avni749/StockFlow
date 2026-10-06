@@ -1,0 +1,7 @@
+module.exports = {
+  ROLES: {
+    SUPER_ADMIN: 'SUPER_ADMIN',
+    BUSINESS_ADMIN: 'BUSINESS_ADMIN',
+    STAFF: 'STAFF'
+  }
+};
