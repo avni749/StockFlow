@@ -15,6 +15,6 @@ router.route('/:supplierId')
   .get(authorize(ROLES.BUSINESS_ADMIN, ROLES.STAFF), getSupplier)
   .patch(authorize(ROLES.BUSINESS_ADMIN, ROLES.STAFF), updateSupplier);
 
-router.patch('/:supplierId/deactivate', authorize(ROLES.BUSINESS_ADMIN), deactivateSupplier);
+router.patch('/:supplierId/deactivate', authorize(ROLES.BUSINESS_ADMIN, ROLES.STAFF), deactivateSupplier);
 
 module.exports = router;

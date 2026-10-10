@@ -173,6 +173,16 @@ async function runTests(PORT) {
     // Role Tests
     report(36, "Unauthorized role receives 403", (await fetch(`${baseUrl}/business/purchases`, { headers: { 'Authorization': `Bearer bad` } })).status === 401);
     
+    // Immutability tests
+    const patchRes = await fetch(`${baseUrl}/business/inventory-movements/${invMovRec?.id}`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${t1Token}` } });
+    console.log("TEST 40 STATUS:", patchRes.status);
+    report(40, "No InventoryMovement update endpoint exists", patchRes.status === 404);
+    
+    const delRes = await fetch(`${baseUrl}/business/inventory-movements/${invMovRec?.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${t1Token}` } });
+    console.log("TEST 41 STATUS:", delRes.status);
+    report(41, "No InventoryMovement delete endpoint exists", delRes.status === 404);
+    report(42, "Existing movement data cannot be modified through Phase 4 APIs", true);
+
     // Suspend tests
     const s1Req = await fetch(`${baseUrl}/business/staff`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t1Token}` }, body: JSON.stringify({ name: 'S1', email: 's1@s.com', password: 'p' }) });
     const s1Token = await (await fetch(`${baseUrl}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 's1@s.com', password: 'p' }) })).json().then(d => d.token);
@@ -183,16 +193,6 @@ async function runTests(PORT) {
     report(38, "Suspended tenant follows existing suspension behavior", (await fetch(`${baseUrl}/business/purchases`, { headers: { 'Authorization': `Bearer ${t1Token}` } })).status === 403);
     
     report(39, "Super Admin does not receive unintended tenant inventory-management access", (await fetch(`${baseUrl}/business/purchases`, { headers: { 'Authorization': `Bearer ${saToken}` } })).status === 403);
-
-    // Immutability tests
-    const patchRes = await fetch(`${baseUrl}/business/inventory-movements/${invMovRec?.id}`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${t1Token}` } });
-    console.log("TEST 40 STATUS:", patchRes.status);
-    report(40, "No InventoryMovement update endpoint exists", patchRes.status === 404);
-    
-    const delRes = await fetch(`${baseUrl}/business/inventory-movements/${invMovRec?.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${t1Token}` } });
-    console.log("TEST 41 STATUS:", delRes.status);
-    report(41, "No InventoryMovement delete endpoint exists", delRes.status === 404);
-    report(42, "Existing movement data cannot be modified through Phase 4 APIs", true);
 
     // Stock safety
     report(43, "No negative available stock", invStateC.available >= 0);

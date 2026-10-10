@@ -679,3 +679,50 @@ textarea.form-control {
     padding: 16px 14px !important;
   }
 }
+
+/* ==========================================================================
+   Interactive Links, Accessibility & Focus Management
+   ========================================================================== */
+.quiet-view-link {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+.quiet-view-link:hover {
+  color: var(--copper-primary);
+}
+
+.back-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+.back-link:hover {
+  color: var(--copper-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--copper-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .btn, .form-control, select.form-control {
+    min-height: 40px;
+  }
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+

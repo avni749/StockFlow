@@ -20,6 +20,21 @@ const tenantSchema = new mongoose.Schema(
       type: Number,
       default: 10,
     },
+    reservationDurationMinutes: {
+      type: Number,
+      default: 15,
+      min: 5,
+      max: 60,
+    },
+    razorpayKeyId: {
+      type: String,
+    },
+    razorpayKeySecret: {
+      type: String,
+    },
+    razorpayWebhookSecret: {
+      type: String,
+    }
   },
   { timestamps: true }
 );

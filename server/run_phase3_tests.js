@@ -21,6 +21,8 @@ async function runTests(PORT) {
     await User.deleteMany({});
     await Product.deleteMany({});
     await Supplier.deleteMany({});
+    await require('./src/models/InventoryMovement').deleteMany({});
+    await require('./src/models/InventoryState').deleteMany({});
 
     await seedSuperAdmin();
 

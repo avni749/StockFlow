@@ -127,7 +127,6 @@ export default function DashboardLayout() {
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(3px)',
             zIndex: 90
           }}
         />

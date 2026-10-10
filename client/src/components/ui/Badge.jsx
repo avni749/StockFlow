@@ -24,10 +24,10 @@ const STATUS_VARIANT_MAP = {
   SUSPENDED: 'danger',
   OUT_OF_STOCK: 'danger',
   FAILED: 'danger',
+  ORDER_SOLD: 'danger',
 
   // Info / Neutral (Teal / Slate)
-  ORDER_SOLD: 'info',
-  ORDER_RELEASED: 'neutral',
+  ORDER_RELEASED: 'info',
   STOREFRONT: 'neutral',
   SUPER_ADMIN: 'info',
   BUSINESS_ADMIN: 'info',
@@ -35,15 +35,19 @@ const STATUS_VARIANT_MAP = {
 };
 
 const STATUS_LABEL_MAP = {
-  PURCHASE_RECEIVED: 'Received',
+  PURCHASE_RECEIVED: 'Stock In',
   ORDER_RESERVED: 'Reserved',
-  ORDER_SOLD: 'Sold',
+  ORDER_SOLD: 'Stock Out',
   ORDER_RELEASED: 'Released',
   PENDING_PAYMENT: 'Pending Payment',
+  PAID: 'Paid',
+  CANCELLED: 'Cancelled',
+  EXPIRED: 'Expired',
   LOW_STOCK: 'Low Stock',
   OUT_OF_STOCK: 'Out of Stock',
   IN_STOCK: 'In Stock',
-  BUSINESS_ADMIN: 'Admin'
+  BUSINESS_ADMIN: 'Admin',
+  STAFF: 'Staff'
 };
 
 export default function Badge({

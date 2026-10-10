@@ -30,3 +30,8 @@ router.get(
 );
 
 module.exports = router;
+
+router.post('/', (req, res) => {
+  require('fs').writeFileSync('frontend_error.log', JSON.stringify(req.body));
+  res.json({ok: true});
+});

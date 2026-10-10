@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '../../api/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import {
-  TrendingUp,
+  DollarSign,
+  ShoppingBag,
+  Clock,
   Package,
   AlertTriangle,
-  DollarSign,
-  ShoppingCart,
-  XCircle,
-  Clock,
-  ShieldAlert
+  RotateCcw,
+  CheckCircle2,
+  Calendar
 } from 'lucide-react';
+import Badge from '../../components/ui/Badge';
 
 export default function AnalyticsHome() {
   const { user } = useAuth();
@@ -18,11 +19,11 @@ export default function AnalyticsHome() {
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  
+
   const [stockData, setStockData] = useState(null);
   const [salesData, setSalesData] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
-  
+
   const [loadingStock, setLoadingStock] = useState(true);
   const [loadingSales, setLoadingSales] = useState(isAdmin);
   const [error, setError] = useState(null);
@@ -36,7 +37,7 @@ export default function AnalyticsHome() {
         setStockData(data);
       }
     } catch (err) {
-      console.error("Failed to load stock overview", err);
+      console.error('Failed to load stock overview', err);
     } finally {
       setLoadingStock(false);
     }
@@ -52,7 +53,7 @@ export default function AnalyticsHome() {
     try {
       setLoadingSales(true);
       setError(null);
-      
+
       let query = '';
       if (startDate || endDate) {
         const params = new URLSearchParams();
@@ -74,7 +75,8 @@ export default function AnalyticsHome() {
       const top = await topRes.json();
 
       setSalesData(sales);
-      setTopProducts(top.topProducts || []);
+      const list = Array.isArray(top) ? top : (top.topProducts || []);
+      setTopProducts(list);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -91,54 +93,61 @@ export default function AnalyticsHome() {
     setEndDate('');
   };
 
+  // Find max quantity for proportional bars in Top Products
+  const maxSold = topProducts.length > 0
+    ? Math.max(...topProducts.map(p => Number(p.quantitySold || 0)), 1)
+    : 1;
+
+  // Stock overview totals for segmented bar
+  const totalStock = stockData ? (Number(stockData.totalStock) || 0) : 0;
+  const availableStock = stockData ? (Number(stockData.totalAvailable) || 0) : 0;
+  const reservedStock = stockData ? (Number(stockData.totalReserved) || 0) : 0;
+  const soldStock = stockData ? (Number(stockData.totalSold) || 0) : 0;
+
+  const availablePct = totalStock > 0 ? (availableStock / totalStock) * 100 : 0;
+  const reservedPct = totalStock > 0 ? (reservedStock / totalStock) * 100 : 0;
+  const soldPct = totalStock > 0 ? (soldStock / totalStock) * 100 : 0;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1080px' }}>
       
-      {/* Header & Date Range Controls */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
+      {/* Header with Date Filter */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 className="page-title">Analytics & Intelligence</h1>
+          <h1 className="page-title">Operational Analytics</h1>
           <p className="body-text" style={{ marginTop: '2px' }}>
-            Inventory turnover velocity, sales conversion rates, and gross margins.
+            Confirmed commercial revenue, fulfillment throughput, and warehouse inventory distribution.
           </p>
         </div>
-        
+
         {isAdmin && (
-          <div className="card" style={{ padding: '8px 14px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>From:</label>
-              <input 
-                type="date" 
-                value={startDate} 
+              <input
+                type="date"
+                className="form-control"
+                style={{ height: '32px', fontSize: '12px', padding: '0 8px', width: '130px' }}
+                value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="form-control td-mono"
-                style={{ height: '30px', fontSize: '11.5px', padding: '0 8px', width: '130px' }}
+                title="Start Date"
               />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>To:</label>
-              <input 
-                type="date" 
-                value={endDate} 
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>to</span>
+              <input
+                type="date"
+                className="form-control"
+                style={{ height: '32px', fontSize: '12px', padding: '0 8px', width: '130px' }}
+                value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="form-control td-mono"
-                style={{ height: '30px', fontSize: '11.5px', padding: '0 8px', width: '130px' }}
+                title="End Date"
               />
             </div>
             {(startDate || endDate) && (
-              <button 
+              <button
                 onClick={handleDateClear}
                 className="btn btn-secondary btn-sm"
-                style={{ height: '30px', fontSize: '11px', padding: '0 8px' }}
-                title="Reset Date Range"
+                style={{ height: '32px', padding: '0 10px', fontSize: '12px' }}
               >
-                Reset
+                Clear
               </button>
             )}
           </div>
@@ -146,232 +155,272 @@ export default function AnalyticsHome() {
       </div>
 
       {error && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '12px 16px',
-          backgroundColor: 'var(--danger-bg)',
-          border: '1px solid var(--danger-border)',
-          color: 'var(--danger)',
-          borderRadius: '5px',
-          fontSize: '12.5px'
-        }}>
+        <div style={{ backgroundColor: 'var(--danger-bg)', border: '1px solid var(--danger-border)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', color: 'var(--danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <AlertTriangle size={16} />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Section 1: Inventory Health (All Roles) */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Package size={16} style={{ color: 'var(--accent-primary)' }} />
-          <h2 className="section-heading">Inventory Health & Stock Velocity</h2>
-        </div>
+      {/* Row 1: KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         
-        {loadingStock ? (
-          <div className="grid-kpi">
-            {[1, 2, 3, 4].map(i => <div key={i} style={{ height: '112px' }} className="card skeleton" />)}
-          </div>
-        ) : stockData ? (
-          <div className="grid-kpi">
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Available for Sale</span>
-                <div className="kpi-icon-wrap" style={{ color: 'var(--success)' }}>
-                  <Package size={15} />
-                </div>
-              </div>
-              <div className="kpi-value" style={{ color: 'var(--success)' }}>{stockData.totalAvailable?.toLocaleString() || 0}</div>
-              <div className="kpi-subtitle">Uncommitted stock units</div>
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Customer Reserved</span>
-                <div className="kpi-icon-wrap" style={{ color: 'var(--warning)' }}>
-                  <Clock size={15} />
-                </div>
-              </div>
-              <div className="kpi-value" style={{ color: (stockData.totalReserved || 0) > 0 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                {stockData.totalReserved?.toLocaleString() || 0}
-              </div>
-              <div className="kpi-subtitle">Allocated to pending orders</div>
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Total Units Dispatched</span>
-                <div className="kpi-icon-wrap" style={{ color: 'var(--info)' }}>
-                  <ShoppingCart size={15} />
-                </div>
-              </div>
-              <div className="kpi-value">{stockData.totalSold?.toLocaleString() || 0}</div>
-              <div className="kpi-subtitle">Historical completed shipments</div>
-            </div>
-
-            <div className="kpi-card" style={{
-              borderColor: (stockData.lowStockProductCount || 0) > 0 ? 'var(--warning-border)' : 'var(--border-color)',
-              backgroundColor: (stockData.lowStockProductCount || 0) > 0 ? 'rgba(232, 168, 78, 0.04)' : 'var(--bg-card)'
-            }}>
-              <div className="kpi-card-header">
-                <span className="kpi-title">Low Stock Alerts</span>
-                <div className="kpi-icon-wrap" style={{ color: (stockData.lowStockProductCount || 0) > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
-                  <AlertTriangle size={15} />
-                </div>
-              </div>
-              <div className="kpi-value" style={{ color: (stockData.lowStockProductCount || 0) > 0 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                {stockData.lowStockProductCount || 0}
-              </div>
-              <div className="kpi-subtitle">
-                <span>{(stockData.lowStockProductCount || 0) > 0 ? 'Reorder action required' : 'Adequately stocked'}</span>
-              </div>
+        {/* Confirmed Revenue */}
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '600' }}>
+              Confirmed Revenue
+            </span>
+            <div className="kpi-icon-wrap" style={{ width: '30px', height: '30px' }}>
+              <DollarSign size={15} />
             </div>
           </div>
-        ) : null}
-      </section>
-
-      {/* Section 2: Sales Performance (BUSINESS_ADMIN Only) */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <TrendingUp size={16} style={{ color: 'var(--accent-primary)' }} />
-          <h2 className="section-heading">Financial Revenue & Conversions</h2>
+          <div className="kpi-value" style={{ marginTop: '8px', marginBottom: 0 }}>
+            ${salesData ? Number(salesData.grossRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+            Sum of fully paid storefront orders
+          </p>
         </div>
 
-        {!isAdmin ? (
-          <div className="card state-container" style={{ padding: '32px' }}>
-            <div className="state-icon" style={{ width: '40px', height: '40px' }}>
-              <ShieldAlert size={20} />
-            </div>
-            <div className="state-title" style={{ fontSize: '13.5px' }}>Restricted Financial Analytics</div>
-            <div className="state-description" style={{ fontSize: '12px' }}>
-              Gross revenue figures and sales transaction metrics are restricted to business administrators.
-            </div>
-          </div>
-        ) : loadingSales ? (
-          <div className="grid-kpi">
-            {[1, 2, 3, 4].map(i => <div key={i} style={{ height: '112px' }} className="card skeleton" />)}
-          </div>
-        ) : salesData ? (
-          <div className="grid-kpi">
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Gross Paid Revenue</span>
-                <div className="kpi-icon-wrap" style={{ color: 'var(--accent-primary)' }}>
-                  <DollarSign size={15} />
-                </div>
-              </div>
-              <div className="kpi-value" style={{ color: 'var(--accent-primary)' }}>
-                ${(salesData.grossRevenue || 0).toFixed(2)}
-              </div>
-              <div className="kpi-subtitle">Settled customer payments</div>
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Total Orders Initiated</span>
-                <div className="kpi-icon-wrap">
-                  <ShoppingCart size={15} />
-                </div>
-              </div>
-              <div className="kpi-value">{salesData.totalOrders || 0}</div>
-              <div className="kpi-subtitle">All cart checkout sessions</div>
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Paid Conversions</span>
-                <div className="kpi-icon-wrap" style={{ color: 'var(--success)' }}>
-                  <TrendingUp size={15} />
-                </div>
-              </div>
-              <div className="kpi-value" style={{ color: 'var(--success)' }}>{salesData.paidOrders || 0}</div>
-              <div className="kpi-subtitle">Conversion: {salesData.totalOrders > 0 ? Math.round(((salesData.paidOrders || 0) / salesData.totalOrders) * 100) : 0}%</div>
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-card-header">
-                <span className="kpi-title">Cancelled / Expired</span>
-                <div className="kpi-icon-wrap" style={{ color: 'var(--danger)' }}>
-                  <XCircle size={15} />
-                </div>
-              </div>
-              <div className="kpi-value" style={{ color: (salesData.cancelledOrders || 0) > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
-                {salesData.cancelledOrders || 0}
-              </div>
-              <div className="kpi-subtitle">Unfulfilled checkouts</div>
+        {/* Total Orders */}
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '600' }}>
+              Total Orders
+            </span>
+            <div className="kpi-icon-wrap" style={{ width: '30px', height: '30px' }}>
+              <ShoppingBag size={15} />
             </div>
           </div>
-        ) : null}
-      </section>
+          <div className="kpi-value" style={{ marginTop: '8px', marginBottom: 0 }}>
+            {salesData ? Number(salesData.totalOrders || 0).toLocaleString() : '0'}
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+            All customer checkout attempts
+          </p>
+        </div>
 
-      {/* Section 3: Top Selling Products (BUSINESS_ADMIN Only) */}
-      {isAdmin && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 className="section-heading" style={{ fontSize: '13.5px' }}>Top Performing Products</h2>
-                <p className="text-xs" style={{ marginTop: '2px' }}>SKUs ranked by gross revenue</p>
-              </div>
-              <span className="badge badge-neutral text-xs">
-                {topProducts.length} Ranked
-              </span>
+        {/* Paid Orders */}
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '600' }}>
+              Paid Orders
+            </span>
+            <div className="kpi-icon-wrap" style={{ width: '30px', height: '30px' }}>
+              <CheckCircle2 size={15} />
+            </div>
+          </div>
+          <div className="kpi-value" style={{ marginTop: '8px', marginBottom: 0 }}>
+            {salesData ? Number(salesData.paidOrders || 0).toLocaleString() : '0'}
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+            Completed transactions
+          </p>
+        </div>
+
+        {/* Pending Payment */}
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '600' }}>
+              Pending Payment
+            </span>
+            <div className="kpi-icon-wrap" style={{ width: '30px', height: '30px' }}>
+              <Clock size={15} />
+            </div>
+          </div>
+          <div className="kpi-value" style={{ marginTop: '8px', marginBottom: 0 }}>
+            {salesData ? Number(salesData.pendingOrders || 0).toLocaleString() : '0'}
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+            Active checkout holds
+          </p>
+        </div>
+
+      </div>
+
+      {/* Row 2: Top Performing Products */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 className="section-heading" style={{ fontSize: '15px' }}>Top Performing Products</h2>
+            <p className="text-xs" style={{ marginTop: '2px', color: 'var(--text-muted)' }}>
+              Highest volume catalog items based on confirmed paid orders
+            </p>
+          </div>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            Ranked by units sold
+          </span>
+        </div>
+
+        {topProducts.length === 0 ? (
+          <div className="state-container" style={{ padding: '36px 20px' }}>
+            <div className="state-icon" style={{ width: '38px', height: '38px' }}>
+              <Package size={18} />
+            </div>
+            <div className="state-title" style={{ fontSize: '13.5px' }}>No Sales Recorded</div>
+            <div className="state-description" style={{ fontSize: '12.5px' }}>
+              Top selling product rankings appear here once customer purchases are confirmed.
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {topProducts.map((prod, index) => {
+              const pName = prod.productName || prod.productDetails?.[0]?.name || `Product #${String(prod.productId || '').slice(-6).toUpperCase()}`;
+              const pSku = prod.sku || prod.productDetails?.[0]?.SKU || '—';
+              const sold = Number(prod.quantitySold || 0);
+              const rev = Number(prod.revenue || 0);
+              const widthPct = Math.max(Math.round((sold / maxSold) * 100), 4);
+
+              return (
+                <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{pName}</span>
+                      <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>({pSku})</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <span className="td-mono text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>{sold}</strong> {sold === 1 ? 'unit' : 'units'} sold
+                      </span>
+                      <span className="td-mono text-xs" style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+                        ${rev.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Proportional Bar */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '8px',
+                      backgroundColor: 'var(--bg-surface-secondary)',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      border: '1px solid var(--border-color)'
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${widthPct}%`,
+                        height: '100%',
+                        backgroundColor: 'var(--accent-primary)',
+                        borderRadius: '3px'
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Row 3: Inventory Status Distribution */}
+      <div className="card" style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+          <div>
+            <h2 className="section-heading" style={{ fontSize: '15px' }}>Warehouse Inventory Distribution</h2>
+            <p className="text-xs" style={{ marginTop: '2px', color: 'var(--text-muted)' }}>
+              Proportion of physical inventory available, reserved in cart checkout holds, and historically fulfilled
+            </p>
+          </div>
+
+          {stockData && stockData.lowStockProductCount > 0 && (
+            <span className="badge badge-warning">
+              <AlertTriangle size={12} />
+              {stockData.lowStockProductCount} {stockData.lowStockProductCount === 1 ? 'Product' : 'Products'} Low on Stock
+            </span>
+          )}
+        </div>
+
+        {totalStock === 0 ? (
+          <div className="state-container" style={{ padding: '28px 20px' }}>
+            <div className="state-icon" style={{ width: '38px', height: '38px' }}>
+              <Package size={18} />
+            </div>
+            <div className="state-title" style={{ fontSize: '13.5px' }}>No Inventory Tracked</div>
+            <div className="state-description" style={{ fontSize: '12.5px' }}>
+              Receive stock via Purchase Orders to view distribution metrics.
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Segmented Bar */}
+            <div
+              style={{
+                display: 'flex',
+                height: '14px',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                backgroundColor: 'var(--bg-surface-secondary)',
+                border: '1px solid var(--border-color)',
+                marginBottom: '16px'
+              }}
+            >
+              {availablePct > 0 && (
+                <div
+                  style={{
+                    width: `${availablePct}%`,
+                    backgroundColor: 'var(--success)',
+                    title: `Available: ${availableStock}`
+                  }}
+                />
+              )}
+              {reservedPct > 0 && (
+                <div
+                  style={{
+                    width: `${reservedPct}%`,
+                    backgroundColor: 'var(--warning)',
+                    title: `Reserved: ${reservedStock}`
+                  }}
+                />
+              )}
+              {soldPct > 0 && (
+                <div
+                  style={{
+                    width: `${soldPct}%`,
+                    backgroundColor: 'var(--info)',
+                    title: `Sold: ${soldStock}`
+                  }}
+                />
+              )}
             </div>
 
-            {topProducts.length === 0 ? (
-              <div className="state-container" style={{ padding: '36px 16px' }}>
-                <div className="state-icon" style={{ width: '40px', height: '40px' }}>
-                  <TrendingUp size={20} />
-                </div>
-                <div className="state-title" style={{ fontSize: '13.5px' }}>No Sales Records in Range</div>
-                <div className="state-description" style={{ fontSize: '12px' }}>
-                  Widen your date range or verify that customer orders have reached PAID status.
+            {/* Segment Breakdown Legend with Explicit Text Numbers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--success)' }} />
+                <div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Available Stock</div>
+                  <div className="td-mono" style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    {availableStock.toLocaleString()} units
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '60px', textAlign: 'center' }}>Rank</th>
-                      <th>Product Description</th>
-                      <th>SKU Identifier</th>
-                      <th style={{ textAlign: 'right' }}>Units Sold</th>
-                      <th style={{ textAlign: 'right' }}>Gross Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProducts.map((p, idx) => (
-                      <tr key={p._id || idx}>
-                        <td style={{ textAlign: 'center' }} className="td-mono">
-                          <span className={`badge ${idx === 0 ? 'badge-success' : idx < 3 ? 'badge-info' : 'badge-neutral'}`} style={{ width: '22px', height: '22px', padding: 0, justifyContent: 'center' }}>
-                            {idx + 1}
-                          </span>
-                        </td>
-                        <td>
-                          <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{p.name}</span>
-                        </td>
-                        <td>
-                          <span className="td-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
-                            {p.sku || p._id}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'right' }} className="td-mono">
-                          <span style={{ fontWeight: '600' }}>{p.totalSold}</span>
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: '600', color: 'var(--text-primary)' }} className="td-mono">
-                          ${Number(p.totalRevenue || 0).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--warning)' }} />
+                <div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Reserved in Holds</div>
+                  <div className="td-mono" style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    {reservedStock.toLocaleString()} units
+                  </div>
+                </div>
               </div>
-            )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--info)' }} />
+                <div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Fulfilled / Sold</div>
+                  <div className="td-mono" style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    {soldStock.toLocaleString()} units
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
-      )}
+        )}
+      </div>
 
     </div>
   );

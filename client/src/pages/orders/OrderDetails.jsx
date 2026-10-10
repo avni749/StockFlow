@@ -4,15 +4,13 @@ import { apiFetch } from '../../api/apiClient';
 import {
   ArrowLeft,
   CreditCard,
-  Truck,
   User,
-  Clock,
   Calendar,
   AlertTriangle,
-  Package,
-  DollarSign,
-  CheckCircle2
+  Package
 } from 'lucide-react';
+import Badge from '../../components/ui/Badge';
+import ProductThumbnail from '../../components/ui/ProductThumbnail';
 
 export default function OrderDetails() {
   const { orderId } = useParams();
@@ -25,7 +23,7 @@ export default function OrderDetails() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const res = await apiFetch(`/business/orders/${orderId}`);
         if (!res.ok) {
           if (res.status === 404) throw new Error('Order not found.');
@@ -45,8 +43,8 @@ export default function OrderDetails() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '960px' }}>
-        <div style={{ width: '120px', height: '24px' }} className="skeleton" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1080px' }}>
+        <div style={{ width: '140px', height: '24px' }} className="skeleton" />
         <div style={{ width: '280px', height: '36px' }} className="skeleton" />
         <div style={{ height: '360px' }} className="card skeleton" />
       </div>
@@ -68,25 +66,22 @@ export default function OrderDetails() {
     );
   }
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'PAID':
-        return <span className="badge badge-success">Paid & Confirmed</span>;
-      case 'PENDING_PAYMENT':
-        return <span className="badge badge-warning">Awaiting Payment</span>;
-      case 'CANCELLED':
-        return <span className="badge badge-danger">Cancelled</span>;
-      case 'EXPIRED':
-        return <span className="badge badge-neutral">Expired</span>;
-      default:
-        return <span className="badge badge-neutral">{status}</span>;
-    }
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '960px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1080px' }}>
       <div>
-        <Link to="/orders" className="text-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
+        <Link
+          to="/orders"
+          className="back-link"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: 'var(--text-secondary)',
+            fontSize: '13px',
+            textDecoration: 'none',
+            fontWeight: '500'
+          }}
+        >
           <ArrowLeft size={14} /> Back to Customer Orders
         </Link>
       </div>
@@ -96,145 +91,167 @@ export default function OrderDetails() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h1 className="page-title">Order #{order._id.slice(-6).toUpperCase()}</h1>
-            {getStatusBadge(order.status)}
+            <Badge status={order.status} />
           </div>
-          <div className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-            <Calendar size={13} color="var(--text-muted)" />
-            <span>Placed on {new Date(order.createdAt).toLocaleString()}</span>
+          <div className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', color: 'var(--text-muted)' }}>
+            <Calendar size={13} />
+            <span className="mono">Placed on {new Date(order.createdAt).toLocaleString()}</span>
           </div>
         </div>
 
         <div style={{ textAlign: 'right' }}>
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Amount</span>
-          <div className="mono" style={{ fontSize: '24px', fontWeight: '700', color: 'var(--accent-primary)' }}>
+          <span className="text-xs" style={{ color: 'var(--text-muted)', display: 'block' }}>Order Total</span>
+          <div className="td-mono" style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>
             ${Number(order.totalAmount || 0).toFixed(2)}
           </div>
         </div>
       </div>
 
-      {/* Order Context Cards */}
-      <div className="grid-2col">
-        {/* Customer & Delivery Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div className="card-header" style={{ marginBottom: 0, paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 className="card-title">Customer & Delivery</h3>
-            <User size={16} color="var(--accent-primary)" />
+      {/* Two Column Layout: Line Items on Left, Context on Right */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'start' }}>
+        
+        {/* Left Column: Ordered Line Items */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
+            <h2 className="section-heading" style={{ fontSize: '15px' }}>Line Items</h2>
+            <p className="text-xs" style={{ marginTop: '2px', color: 'var(--text-muted)' }}>
+              Products and quantities captured at time of checkout
+            </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div className="flex-between">
-              <span className="text-sm">Customer Name</span>
-              <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
-                {order.customerName || 'Anonymous Customer'}
-              </span>
-            </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th style={{ textAlign: 'right' }}>Qty</th>
+                  <th style={{ textAlign: 'right' }}>Price</th>
+                  <th style={{ textAlign: 'right' }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(order.items || []).map((item, index) => {
+                  const lineTotal = (item.quantity || 1) * (item.price || item.sellingPrice || 0);
+                  const productInfo = item.productId || {};
+                  const productName = item.name || productInfo.name || 'Catalog Item';
+                  const productSku = item.SKU || productInfo.SKU || '—';
+                  const productImage = item.imageUrl || productInfo.imageUrl;
 
-            <div className="flex-between">
-              <span className="text-sm">Email Address</span>
-              <span className="mono text-sm" style={{ color: order.customerEmail ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                {order.customerEmail || '—'}
-              </span>
-            </div>
-
-            <div className="flex-between">
-              <span className="text-sm">Delivery Address</span>
-              <span style={{ color: order.deliveryAddress ? 'var(--text-primary)' : 'var(--text-muted)', textAlign: 'right', maxWidth: '240px' }}>
-                {typeof order.deliveryAddress === 'string' ? order.deliveryAddress : JSON.stringify(order.deliveryAddress) || '—'}
-              </span>
-            </div>
+                  return (
+                    <tr key={index}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <ProductThumbnail
+                            src={productImage}
+                            alt={productName}
+                            size="sm"
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '13px' }}>
+                              {productName}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="mono text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {productSku}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }} className="td-mono">
+                        {item.quantity || 1}
+                      </td>
+                      <td style={{ textAlign: 'right' }} className="td-mono">
+                        ${Number(item.price || item.sellingPrice || 0).toFixed(2)}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: '600' }} className="td-mono">
+                        ${lineTotal.toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Payment & Reservation Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div className="card-header" style={{ marginBottom: 0, paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 className="card-title">Payment & Reservation</h3>
-            <CreditCard size={16} color="var(--info)" />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div className="flex-between">
-              <span className="text-sm">Payment Status</span>
-              {getStatusBadge(order.status)}
+        {/* Right Column: Customer, Delivery, Payment & Context */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Customer & Delivery Card */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="card-header" style={{ marginBottom: 0, paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
+              <h3 className="card-title" style={{ fontSize: '14px', textTransform: 'none', color: 'var(--text-primary)' }}>Customer & Delivery</h3>
+              <User size={16} color="var(--accent-primary)" />
             </div>
 
-            {order.payment && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div className="flex-between">
-                <span className="text-sm">Transaction Status</span>
-                <span className="badge badge-neutral mono" style={{ textTransform: 'none' }}>
-                  {order.payment.status || 'VERIFIED'}
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Customer Name</span>
+                <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                  {order.customerName || 'Store Customer'}
                 </span>
               </div>
-            )}
 
-            {order.expiresAt && order.status === 'PENDING_PAYMENT' && (
               <div className="flex-between">
-                <span className="text-sm">Reservation Window</span>
-                <span className="mono text-xs" style={{ color: 'var(--warning)' }}>
-                  Expires {new Date(order.expiresAt).toLocaleTimeString()}
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Email Address</span>
+                <span className="mono text-xs" style={{ color: order.customerEmail ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                  {order.customerEmail || '—'}
                 </span>
               </div>
-            )}
 
-            <div className="flex-between">
-              <span className="text-sm">Order Reference ID</span>
-              <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                {order._id}
-              </span>
+              <div className="flex-between" style={{ alignItems: 'flex-start' }}>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Delivery Address</span>
+                <span style={{ color: order.deliveryAddress ? 'var(--text-primary)' : 'var(--text-muted)', textAlign: 'right', maxWidth: '220px', fontSize: '13px' }}>
+                  {typeof order.deliveryAddress === 'string' ? order.deliveryAddress : JSON.stringify(order.deliveryAddress) || '—'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Itemized Order Products */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
-          <h2 className="section-heading" style={{ fontSize: '15px' }}>Ordered Products</h2>
-          <p className="text-xs" style={{ marginTop: '2px' }}>Items and quantities captured at time of checkout</p>
+          {/* Payment & Allocation Card */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="card-header" style={{ marginBottom: 0, paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
+              <h3 className="card-title" style={{ fontSize: '14px', textTransform: 'none', color: 'var(--text-primary)' }}>Payment & Allocation</h3>
+              <CreditCard size={16} color="var(--info)" />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex-between">
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Status</span>
+                <Badge status={order.status} />
+              </div>
+
+              {order.payment && (
+                <div className="flex-between">
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Transaction Status</span>
+                  <span className="mono text-xs" style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
+                    {order.payment.status || 'VERIFIED'}
+                  </span>
+                </div>
+              )}
+
+              {order.expiresAt && order.status === 'PENDING_PAYMENT' && (
+                <div className="flex-between">
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Hold Expiry</span>
+                  <span className="mono text-xs" style={{ color: 'var(--warning)', fontWeight: '500' }}>
+                    {new Date(order.expiresAt).toLocaleTimeString()}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex-between">
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Order ID</span>
+                <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {order._id}
+                </span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product Description</th>
-                <th>SKU</th>
-                <th style={{ textAlign: 'right' }}>Quantity</th>
-                <th style={{ textAlign: 'right' }}>Unit Price</th>
-                <th style={{ textAlign: 'right' }}>Line Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(order.items || []).map((item, index) => {
-                const lineTotal = (item.quantity || 1) * (item.price || 0);
-
-                return (
-                  <tr key={index}>
-                    <td>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
-                        {item.name || 'Catalog Item'}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="mono badge badge-neutral text-xs" style={{ textTransform: 'none' }}>
-                        {item.SKU || '—'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }} className="td-mono">
-                      {item.quantity || 1}
-                    </td>
-                    <td style={{ textAlign: 'right' }} className="td-mono">
-                      ${Number(item.price || 0).toFixed(2)}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: '600' }} className="td-mono">
-                      ${lineTotal.toFixed(2)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

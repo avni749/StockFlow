@@ -2,19 +2,20 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../../api/apiClient';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  User, 
-  Users, 
-  Building, 
-  LogOut, 
-  CheckCircle2, 
-  XCircle, 
-  Plus, 
-  Edit3, 
+import {
+  User,
+  Users,
+  Building,
+  LogOut,
+  Plus,
+  Edit3,
   ShieldAlert,
   RotateCcw,
-  KeyRound
+  KeyRound,
+  ChevronDown
 } from 'lucide-react';
+import Badge from '../../components/ui/Badge';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function SettingsHome() {
   const { user, logout } = useAuth();
@@ -24,6 +25,10 @@ export default function SettingsHome() {
   const [loading, setLoading] = useState(isAdmin);
   const [error, setError] = useState(null);
   const [actionInProgress, setActionInProgress] = useState(null);
+
+  // Dialog States
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState(null);
 
   const fetchStaff = async () => {
     if (!isAdmin) return;
@@ -45,8 +50,9 @@ export default function SettingsHome() {
     fetchStaff();
   }, [isAdmin]);
 
-  const handleSuspend = async (staffId) => {
-    if (!window.confirm("Are you sure you want to suspend this staff member? They will lose access immediately.")) return;
+  const handleConfirmSuspend = async () => {
+    if (!suspendTarget) return;
+    const staffId = suspendTarget.id;
     try {
       setActionInProgress(staffId);
       const res = await apiFetch(`/business/staff/${staffId}/suspend`, { method: 'PATCH' });
@@ -56,6 +62,7 @@ export default function SettingsHome() {
       alert(err.message);
     } finally {
       setActionInProgress(null);
+      setSuspendTarget(null);
     }
   };
 
@@ -75,116 +82,99 @@ export default function SettingsHome() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '1080px' }}>
       
-      {/* Page Header */}
+      {/* Header */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '6px' }}>
-          <span>System</span>
-          <span>/</span>
-          <span style={{ color: 'var(--text-secondary)' }}>Settings & Team</span>
-        </div>
         <h1 className="page-title">Workspace Settings</h1>
-        <p className="body-text" style={{ marginTop: '4px' }}>
-          Manage your operator credentials, organization parameters, and staff permissions.
+        <p className="body-text" style={{ marginTop: '2px' }}>
+          Operator credentials, access permissions, and system context.
         </p>
       </div>
 
-      {/* Top 2 Cards: Profile & Organization Context */}
+      {/* SECTION 1: ACCOUNT & SECURITY */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         
-        {/* Profile Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="card-header" style={{ marginBottom: 0 }}>
+        {/* Account Profile Card */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
+          <div className="card-header" style={{ marginBottom: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div className="kpi-icon-wrap" style={{ width: '32px', height: '32px' }}>
                 <User size={16} />
               </div>
               <div>
                 <h3 className="card-title" style={{ color: 'var(--text-primary)', textTransform: 'none', fontSize: '15px' }}>Operator Profile</h3>
-                <span className="text-xs">Active session credentials</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Active session identity</span>
               </div>
             </div>
-            <span className="badge badge-success">ACTIVE</span>
+            <Badge status="ACTIVE" />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span className="text-sm">Full Name</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex-between">
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Full Name</span>
               <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{user?.name || '—'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span className="text-sm">Email Address</span>
-              <span className="td-mono" style={{ color: 'var(--text-primary)', fontSize: '12px' }}>{user?.email || '—'}</span>
+            <div className="flex-between">
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Email Address</span>
+              <span className="mono text-xs" style={{ color: 'var(--text-primary)' }}>{user?.email || '—'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span className="text-sm">Assigned Role</span>
-              <span className={`badge ${isAdmin ? 'badge-info' : 'badge-neutral'}`}>
-                {user?.role ? user.role.replace('_', ' ') : 'USER'}
-              </span>
+            <div className="flex-between">
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Assigned Role</span>
+              <Badge status={user?.role || 'STAFF'} />
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Active Session Card */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
+          <div className="card-header" style={{ marginBottom: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="kpi-icon-wrap" style={{ width: '32px', height: '32px' }}>
+                <KeyRound size={16} />
+              </div>
+              <div>
+                <h3 className="card-title" style={{ color: 'var(--text-primary)', textTransform: 'none', fontSize: '15px' }}>Security & Session</h3>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Token authentication</span>
+              </div>
             </div>
           </div>
 
-          <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
-            <button 
-              onClick={logout} 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              Your session is authenticated via tenant-scoped bearer tokens with encrypted headers. Terminating your session will revoke local access.
+            </p>
+          </div>
+
+          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
               className="btn btn-outline btn-sm"
-              style={{ width: '100%', color: 'var(--danger)', borderColor: 'var(--danger-border)' }}
+              style={{
+                width: '100%',
+                color: 'var(--danger)',
+                borderColor: 'var(--danger-border)',
+                fontWeight: '500'
+              }}
             >
               <LogOut size={14} /> End Active Session
             </button>
           </div>
         </div>
 
-        {/* Business/Tenant Context */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="card-header" style={{ marginBottom: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div className="kpi-icon-wrap" style={{ width: '32px', height: '32px' }}>
-                <Building size={16} />
-              </div>
-              <div>
-                <h3 className="card-title" style={{ color: 'var(--text-primary)', textTransform: 'none', fontSize: '15px' }}>Tenant Environment</h3>
-                <span className="text-xs">Isolation & runtime context</span>
-              </div>
-            </div>
-            <span className="badge badge-info">ENTERPRISE</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span className="text-sm">Tenant Identifier</span>
-              <span className="td-mono" style={{ color: 'var(--accent-primary)', fontSize: '12px' }}>{user?.tenantId || 'DEFAULT'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span className="text-sm">Runtime Isolation</span>
-              <span className="badge badge-success">STRICT MULTI-TENANT</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span className="text-sm">Database Engine</span>
-              <span className="td-mono text-xs" style={{ color: 'var(--text-secondary)' }}>MongoDB Atlas Enterprise</span>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 'auto', paddingTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '12px' }}>
-            <KeyRound size={14} style={{ color: 'var(--accent-primary)' }} />
-            <span>Encrypted at rest with tenant-scoped query filters.</span>
-          </div>
-        </div>
-
       </div>
 
-      {/* Staff Management - Visible to BUSINESS_ADMIN */}
+      {/* SECTION 2: TEAM & PERMISSIONS (BUSINESS_ADMIN only) */}
       {isAdmin && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 className="section-heading" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Users size={18} style={{ color: 'var(--accent-primary)' }} /> Staff Directory & Access Control
+                <h2 className="section-heading" style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={16} style={{ color: 'var(--accent-primary)' }} /> Team & Permissions
                 </h2>
-                <span className="badge badge-neutral" style={{ fontSize: '11px' }}>{staffList.length} Accounts</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>({staffList.length} Accounts)</span>
               </div>
-              <p className="text-xs" style={{ marginTop: '4px' }}>
-                Manage team members authorized to process inventory movements and catalog operations.
+              <p className="text-xs" style={{ marginTop: '2px', color: 'var(--text-muted)' }}>
+                Authorized team members for warehouse catalog and inventory operations
               </p>
             </div>
             <Link to="/settings/staff/new" className="btn btn-primary btn-sm">
@@ -193,37 +183,38 @@ export default function SettingsHome() {
           </div>
 
           {error && (
-            <div style={{ margin: '16px 24px', backgroundColor: 'var(--danger-bg)', border: '1px solid var(--danger-border)', padding: '12px 16px', borderRadius: '6px', color: 'var(--danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ margin: '16px 24px', backgroundColor: 'var(--danger-bg)', border: '1px solid var(--danger-border)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', color: 'var(--danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ShieldAlert size={16} />
               <span>{error}</span>
             </div>
           )}
 
           {loading ? (
-            <div className="state-container" style={{ padding: '48px 24px' }}>
-              <div style={{ width: '32px', height: '32px', border: '3px solid var(--border-color)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-              <p className="text-sm" style={{ marginTop: '8px' }}>Loading staff records...</p>
+            <div className="state-container" style={{ padding: '40px 20px' }}>
+              <div style={{ width: '28px', height: '28px', border: '3px solid var(--border-color)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+              <p className="text-sm" style={{ marginTop: '8px', color: 'var(--text-muted)' }}>Loading staff records...</p>
             </div>
           ) : staffList.length === 0 ? (
-            <div className="state-container" style={{ padding: '48px 24px' }}>
-              <div className="state-icon">
-                <Users size={24} />
+            <div className="state-container" style={{ padding: '40px 20px' }}>
+              <div className="state-icon" style={{ width: '38px', height: '38px' }}>
+                <Users size={18} />
               </div>
-              <h4 className="state-title">No Staff Accounts Registered</h4>
-              <p className="text-sm" style={{ maxWidth: '380px' }}>
-                You have not provisioned any staff accounts yet. Create staff members to allow your team to operate warehouse inventory.
+              <div className="state-title" style={{ fontSize: '13.5px' }}>No Staff Accounts Registered</div>
+              <p className="text-xs" style={{ maxWidth: '380px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                You have not provisioned any staff accounts yet. Create team accounts to allow staff members to operate inventory.
               </p>
-              <Link to="/settings/staff/new" className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>
-                <Plus size={14} /> Create First Staff Member
+              <Link to="/settings/staff/new" className="btn btn-primary btn-sm" style={{ marginTop: '12px' }}>
+                <Plus size={14} /> Add First Staff Member
               </Link>
             </div>
           ) : (
-            <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+            <div style={{ overflowX: 'auto' }}>
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>Staff Member</th>
                     <th>Email Address</th>
+                    <th>Role</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -235,49 +226,59 @@ export default function SettingsHome() {
                     return (
                       <tr key={staff.id}>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-surface-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color: 'var(--accent-primary)' }}>
-                              {staff.name ? staff.name.charAt(0).toUpperCase() : 'U'}
-                            </div>
-                            <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{staff.name}</span>
+                          <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                            {staff.name}
                           </div>
                         </td>
                         <td>
-                          <span className="td-mono text-xs" style={{ color: 'var(--text-secondary)' }}>{staff.email}</span>
-                        </td>
-                        <td>
-                          <span className={`badge ${isStaffActive ? 'badge-success' : 'badge-danger'}`}>
-                            {isStaffActive ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                            {staff.status}
+                          <span className="mono text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            {staff.email}
                           </span>
                         </td>
+                        <td>
+                          <Badge status={staff.role || 'STAFF'} />
+                        </td>
+                        <td>
+                          <Badge status={staff.status} />
+                        </td>
                         <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                            <Link 
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                            <Link
                               to={`/settings/staff/${staff.id}/edit`}
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '0 10px', height: '28px', fontSize: '12px' }}
+                              className="quiet-view-link"
+                              style={{
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                color: 'var(--text-secondary)',
+                                textDecoration: 'none'
+                              }}
                             >
-                              <Edit3 size={12} /> Edit
+                              Edit
                             </Link>
 
                             {isStaffActive ? (
-                              <button 
-                                onClick={() => handleSuspend(staff.id)}
+                              <button
+                                onClick={() => setSuspendTarget(staff)}
                                 disabled={isBusy}
-                                className="btn btn-danger btn-sm"
-                                style={{ padding: '0 10px', height: '28px', fontSize: '12px' }}
+                                className="btn btn-outline btn-sm"
+                                style={{
+                                  padding: '0 8px',
+                                  height: '26px',
+                                  fontSize: '11.5px',
+                                  color: 'var(--danger)',
+                                  borderColor: 'var(--danger-border)'
+                                }}
                               >
-                                <XCircle size={12} /> {isBusy ? 'Suspending...' : 'Suspend'}
+                                {isBusy ? 'Suspending...' : 'Suspend'}
                               </button>
                             ) : (
-                              <button 
+                              <button
                                 onClick={() => handleReactivate(staff.id)}
                                 disabled={isBusy}
                                 className="btn btn-primary btn-sm"
-                                style={{ padding: '0 10px', height: '28px', fontSize: '12px' }}
+                                style={{ padding: '0 8px', height: '26px', fontSize: '11.5px' }}
                               >
-                                <RotateCcw size={12} /> {isBusy ? 'Reactivating...' : 'Reactivate'}
+                                <RotateCcw size={11} /> {isBusy ? 'Activating...' : 'Reactivate'}
                               </button>
                             )}
                           </div>
@@ -291,6 +292,76 @@ export default function SettingsHome() {
           )}
         </div>
       )}
+
+      {/* SECTION 3: SYSTEM INFORMATION (Collapsed Details Accordion) */}
+      <details
+        className="card"
+        style={{
+          padding: '16px 20px',
+          cursor: 'pointer'
+        }}
+      >
+        <summary
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontWeight: '600',
+            fontSize: '13.5px',
+            color: 'var(--text-primary)',
+            userSelect: 'none'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Building size={15} style={{ color: 'var(--text-muted)' }} />
+            <span>System Information</span>
+          </div>
+          <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+        </summary>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', cursor: 'default' }}>
+          <div className="flex-between">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Tenant Identifier</span>
+            <span className="mono text-xs" style={{ color: 'var(--text-primary)' }}>{user?.tenantId || 'DEFAULT'}</span>
+          </div>
+          <div className="flex-between">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Runtime Isolation</span>
+            <Badge status="ACTIVE">STRICT MULTI-TENANT</Badge>
+          </div>
+          <div className="flex-between">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Database Engine</span>
+            <span className="mono text-xs" style={{ color: 'var(--text-secondary)' }}>MongoDB Atlas Enterprise</span>
+          </div>
+        </div>
+      </details>
+
+      {/* End Active Session ConfirmDialog */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        title="End Active Session?"
+        description="End active session? You will be signed out from this session."
+        confirmText="End Session"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logout();
+        }}
+        onClose={() => setShowLogoutConfirm(false)}
+      />
+
+      {/* Suspend Staff Member ConfirmDialog */}
+      <ConfirmDialog
+        isOpen={!!suspendTarget}
+        title="Suspend Staff Member?"
+        description={suspendTarget ? `Are you sure you want to suspend ${suspendTarget.name}? They will immediately lose access to StockFlow.` : ''}
+        confirmText="Suspend Access"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={actionInProgress === suspendTarget?.id}
+        onConfirm={handleConfirmSuspend}
+        onClose={() => setSuspendTarget(null)}
+      />
 
     </div>
   );

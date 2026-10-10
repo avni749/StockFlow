@@ -7,10 +7,9 @@ import {
   ChevronRight,
   Search,
   RefreshCw,
-  AlertTriangle,
-  Eye,
-  Calendar
+  AlertTriangle
 } from 'lucide-react';
+import Badge from '../../components/ui/Badge';
 
 export default function OrderList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,13 +26,13 @@ export default function OrderList() {
     try {
       setLoading(true);
       setError(null);
-      
+
       let url = `/business/orders?page=${currentPage}&limit=20`;
       if (statusFilter) url += `&status=${statusFilter}`;
 
       const res = await apiFetch(url);
       if (!res.ok) throw new Error('Failed to load customer orders');
-      
+
       const data = await res.json();
       setOrders(data.orders || []);
       if (data.pagination) setPagination(data.pagination);
@@ -74,21 +73,6 @@ export default function OrderList() {
     { label: 'Expired', value: 'EXPIRED' }
   ];
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'PAID':
-        return <span className="badge badge-success">PAID</span>;
-      case 'PENDING_PAYMENT':
-        return <span className="badge badge-warning">PENDING</span>;
-      case 'CANCELLED':
-        return <span className="badge badge-danger">CANCELLED</span>;
-      case 'EXPIRED':
-        return <span className="badge badge-neutral">EXPIRED</span>;
-      default:
-        return <span className="badge badge-neutral">{status}</span>;
-    }
-  };
-
   const displayOrders = orders.filter(o => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -103,10 +87,10 @@ export default function OrderList() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ width: '220px', height: '32px' }} className="skeleton" />
-          <div style={{ width: '120px', height: '32px' }} className="skeleton" />
+          <div style={{ width: '100px', height: '32px' }} className="skeleton" />
         </div>
         <div style={{ height: '40px' }} className="card skeleton" />
-        <div style={{ height: '400px' }} className="card skeleton" />
+        <div style={{ height: '360px' }} className="card skeleton" />
       </div>
     );
   }
@@ -128,19 +112,20 @@ export default function OrderList() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}
+      >
         <div>
           <h1 className="page-title">Customer Orders</h1>
           <p className="body-text" style={{ marginTop: '2px' }}>
-            Sales orders, checkout payment status, and customer allocation history.
+            Storefront orders, payment authorizations, and fulfillment allocation.
           </p>
         </div>
 
@@ -151,15 +136,17 @@ export default function OrderList() {
         </div>
       </div>
 
-      {/* Status Tabs Navigation */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        borderBottom: '1px solid var(--border-color)',
-        paddingBottom: '0',
-        overflowX: 'auto'
-      }}>
+      {/* Tabs Navigation */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          borderBottom: '1px solid var(--border-color)',
+          paddingBottom: '0',
+          overflowX: 'auto'
+        }}
+      >
         {tabs.map((tab) => {
           const isActive = statusFilter === tab.value;
           return (
@@ -173,7 +160,7 @@ export default function OrderList() {
                 color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                 fontWeight: isActive ? '600' : '400',
                 padding: '8px 14px',
-                fontSize: '12.5px',
+                fontSize: '13px',
                 cursor: 'pointer',
                 transition: 'all 0.12s ease',
                 whiteSpace: 'nowrap'
@@ -191,33 +178,35 @@ export default function OrderList() {
           <Search size={14} />
           <input
             type="text"
-            placeholder="Search by Order ID or customer email..."
+            placeholder="Search by Order ID, customer, email..."
             className="form-control"
-            style={{ height: '34px', fontSize: '12px' }}
+            style={{ height: '34px', fontSize: '13px' }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="text-xs">
-          Total: <strong style={{ color: 'var(--text-primary)' }}>{pagination.total}</strong> orders recorded
+        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          Showing <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{displayOrders.length}</span> of {pagination.total} orders
         </div>
       </div>
 
       {/* Orders Table Container */}
       <div className="table-container">
         {displayOrders.length === 0 ? (
-          <div className="state-container" style={{ padding: '40px 20px' }}>
-            <div className="state-icon" style={{ width: '40px', height: '40px' }}>
-              <ShoppingBag size={20} />
+          <div className="state-container" style={{ padding: '36px 20px' }}>
+            <div className="state-icon" style={{ width: '38px', height: '38px' }}>
+              <ShoppingBag size={18} />
             </div>
             <div className="state-title" style={{ fontSize: '13.5px' }}>
               {orders.length === 0 ? 'No Orders Recorded' : 'No Matching Orders'}
             </div>
-            <div className="state-description" style={{ fontSize: '12px' }}>
+            <div className="state-description" style={{ fontSize: '12.5px' }}>
               {orders.length === 0
-                ? 'Storefront purchases placed by customers will automatically populate here.'
-                : 'No orders match your active search term or filter.'}
+                ? statusFilter
+                  ? `No customer orders currently have status "${tabs.find(t => t.value === statusFilter)?.label}".`
+                  : 'Storefront checkouts placed by customers will automatically appear in this ledger.'
+                : 'No orders match your active search term.'}
             </div>
           </div>
         ) : (
@@ -225,11 +214,11 @@ export default function OrderList() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Order Reference</th>
-                  <th>Order Date</th>
-                  <th>Customer Information</th>
-                  <th style={{ textAlign: 'center' }}>Units</th>
-                  <th style={{ textAlign: 'right' }}>Total Amount</th>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th style={{ textAlign: 'center' }}>Items</th>
+                  <th style={{ textAlign: 'right' }}>Total</th>
                   <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -243,43 +232,54 @@ export default function OrderList() {
                       <td>
                         <Link
                           to={`/orders/${order._id}`}
-                          style={{ fontWeight: '500', color: 'var(--text-primary)' }}
+                          className="mono"
+                          style={{
+                            fontWeight: '500',
+                            color: 'var(--text-secondary)',
+                            textDecoration: 'none'
+                          }}
                         >
-                          <span className="mono">#{order._id.slice(-6).toUpperCase()}</span>
+                          #{order._id.slice(-6).toUpperCase()}
                         </Link>
                       </td>
                       <td>
-                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                          {order.customerName || 'Store Customer'}
+                        </div>
+                        {order.customerEmail && (
+                          <div className="mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {order.customerEmail}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="mono text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </td>
-                      <td>
-                        <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
-                          {order.customerName || 'Customer'}
-                        </div>
-                        <div className="mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {order.customerEmail || '—'}
-                        </div>
-                      </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className="text-xs">
-                          {itemsCount} {itemsCount === 1 ? 'unit' : 'units'}
+                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: '600' }} className="td-mono">
                         ${Number(order.totalAmount || 0).toFixed(2)}
                       </td>
                       <td>
-                        {getStatusBadge(order.status)}
+                        <Badge status={order.status} />
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <Link
                           to={`/orders/${order._id}`}
-                          className="btn btn-secondary btn-sm"
-                          style={{ height: '26px', padding: '0 8px', fontSize: '11px' }}
-                          title="View Order Details"
+                          className="quiet-view-link"
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            color: 'var(--text-secondary)',
+                            textDecoration: 'none'
+                          }}
                         >
-                          <Eye size={12} /> View
+                          View
                         </Link>
                       </td>
                     </tr>
@@ -292,15 +292,17 @@ export default function OrderList() {
 
         {/* Pagination Bar */}
         {pagination.totalPages > 1 && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '10px 16px',
-            borderTop: '1px solid var(--border-color)',
-            backgroundColor: 'var(--bg-surface-secondary)'
-          }}>
-            <div className="text-xs">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '10px 16px',
+              borderTop: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-surface-secondary)'
+            }}
+          >
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Page <strong style={{ color: 'var(--text-primary)' }}>{pagination.page}</strong> of {pagination.totalPages}
             </div>
 
@@ -323,7 +325,6 @@ export default function OrderList() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

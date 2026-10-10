@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
@@ -13,13 +13,68 @@ export default function ConfirmDialog({
   onConfirm,
   onClose
 }) {
+  const dialogRef = useRef(null);
+  const previouslyFocusedElementRef = useRef(null);
+
   useEffect(() => {
     if (!isOpen) return;
+
+    // Save previous active element to restore focus on close
+    previouslyFocusedElementRef.current = document.activeElement;
+
+    // Focus the dialog or first focusable button
+    const timer = setTimeout(() => {
+      if (dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        }
+      }
+    }, 50);
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // Focus trap
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+      // Restore focus
+      if (previouslyFocusedElementRef.current && previouslyFocusedElementRef.current.focus) {
+        previouslyFocusedElementRef.current.focus();
+      }
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -36,7 +91,6 @@ export default function ConfirmDialog({
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(2px)',
         zIndex: 10000,
         display: 'flex',
         alignItems: 'center',
@@ -46,14 +100,16 @@ export default function ConfirmDialog({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="card"
         style={{
           width: '100%',
           maxWidth: '440px',
           padding: '24px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
           border: '1px solid var(--border-color)',
-          backgroundColor: 'var(--bg-surface)'
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 'var(--radius-md)'
         }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -65,7 +121,7 @@ export default function ConfirmDialog({
             style={{
               width: '36px',
               height: '36px',
-              borderRadius: '8px',
+              borderRadius: '6px',
               backgroundColor: variant === 'danger' ? 'var(--danger-bg)' : 'var(--warning-bg)',
               color: variant === 'danger' ? 'var(--danger)' : 'var(--warning)',
               border: `1px solid ${variant === 'danger' ? 'var(--danger-border)' : 'var(--warning-border)'}`,
@@ -78,7 +134,7 @@ export default function ConfirmDialog({
             <AlertTriangle size={18} />
           </div>
 
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h3
               id="confirm-dialog-title"
               style={{

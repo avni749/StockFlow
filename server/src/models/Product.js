@@ -24,8 +24,7 @@ const productSchema = new mongoose.Schema(
       type: String, // String URL only
     },
     lowStockThreshold: {
-      type: Number,
-      default: 10,
+      type: Number
     },
     status: {
       type: String,
