@@ -508,3 +508,80 @@ ode index.js\ and \
 pm start\ log \MongoDB Connected successfully\, start schedulers, and bind to port 5000.
   - **API Verification**: Tested HTTP GET \http://localhost:5000/\ returning HTTP 200 \{"message":"StockFlow API is running"}\.
   - **Failure Exit Test**: Verified that an invalid connection string causes the server to immediately exit with code 1 without starting Express or printing the old "Server started without Database Connection" warning.
+
+### Phase 11L: Safe Project Cleanup & Pre-Deployment Restoration
+- **Cleanup Date**: 2026-10-15
+- **Objective**: Safely remove genuinely unused scratch files and deployment artifacts, restoring the pre-deployment configuration and development behavior while strictly preserving all application source code, API contracts, database configuration, visual QA evidence, and regression test suites.
+- **Exact Scratch Files Removed (10 files)**:
+  1. `server/dns-fix.js`: Obsolete 2-line scratch DNS override from Phase 11K investigation.
+  2. `server/dns-proxy.js`: Obsolete standalone UDP socket DNS proxy from Phase 11K investigation.
+  3. `server/resolv.conf`: Inactive Unix DNS config file unread on Windows.
+  4. `server/update_product_image.cjs`: One-off database image URL restore script for `WBS-GEN2-001` (already fulfilled).
+  5. `server/capture_checkpoint3_screenshots.cjs`: Scratch Puppeteer script with hardcoded session paths.
+  6. `server/capture_checkpoint4_screenshots.cjs`: Scratch Puppeteer script with hardcoded session paths.
+  7. `server/capture_checkpoint5_screenshots.cjs`: Scratch Puppeteer script with hardcoded session paths.
+  8. `server/capture_full_checkpoint3_suite.cjs`: Scratch Puppeteer script with hardcoded session paths.
+  9. `server/capture_theme_screenshots.cjs`: Scratch Puppeteer script with hardcoded session paths.
+  10. `server/generate_visual_qa_artifact.cjs`: Scratch script formatting markdown artifacts to session directory.
+- **Deployment Files Restored (from commit 1a3ebb7)**:
+  - `render.yaml`: Render web service deployment blueprint.
+  - `client/vercel.json`: Vercel SPA routing rewrite configuration.
+- **Configuration Restored**:
+  - `client/src/api/apiClient.js`: Restored pre-deployment endpoint concatenation (`${BASE_URL}${endpoint}`) and proxy target (`import.meta.env.VITE_API_URL || '/api/v1'`).
+- **Assets Deliberately Retained**:
+  - All 120 visual QA screenshots in `client/qa-screenshots/` preserved as historical sign-off evidence.
+  - All 8 active regression test suites (renamed in Phase 11M: `e2e_test.cjs`, `test_rbac_and_tenant_isolation.cjs`, `test_inventory_insights_api.cjs`, `test_apis.cjs`, `calculate_contrast.cjs`, `test_product_image_rendering.cjs`, `test_frontend_smoke.cjs`, `test_frontend_product_routes.cjs`).
+  - All 13 historical phase test scripts (renamed in Phase 11M: `test_auth_and_registration.js` through `test_browser_ui_e2e.js`, `test_order_management_api.js`, `test_order_duplicate_handling.js`, `test_onboarding_baseline.js`).
+  - All source code, models, controllers, routes, views, `.env`, `.gitignore`, `README.md`, package manifests, and lockfiles.
+- **Post-Cleanup Verification**:
+  - **Frontend Production Build**: `npm run build` executed and passed (`1525 modules transformed`, built in 19.40s, exit code 0).
+  - **Database Connectivity**: MongoDB Atlas connection verified (`connectDB() => true`).
+  - **Permissions & RBAC**: `test_rbac_and_tenant_isolation.cjs` (formerly `test_phase11c_permissions.cjs`) passed with exit code 0 (SUPER_ADMIN restrictions, cross-tenant isolation, Staff and Admin deactivation).
+  - **Inventory & Insights**: `test_inventory_insights_api.cjs` (formerly `test_phase11d_backend.cjs`) passed with exit code 0 (stock-overview, inventory listing, cross-tenant isolation).
+  - **Full E2E Lifecycle**: `e2e_test.cjs` passed with exit code 0 (registration, login, product, supplier, purchase order, receiving, inventory reservation, Razorpay config check).
+  - **Authenticated API Matrix**: `test_apis.cjs` verified 9 authenticated endpoints returning HTTP 200 with valid JSON.
+
+### Phase 11M: Professional Test Script Renaming
+- **Date**: 2026-10-15
+- **Objective**: Replace confusing phase-numbered and ambiguous test filenames with descriptive, professional names without modifying test logic, assertions, API contracts, or production source files.
+- **Complete Old-to-New Filename Mapping (18 files)**:
+  1. `server/run_phase1_tests.js` -> `server/test_auth_and_registration.js`
+  2. `server/run_phase2_tests.js` -> `server/test_superadmin_tenant_lifecycle.js`
+  3. `server/run_phase3_tests.js` -> `server/test_products_and_suppliers.js`
+  4. `server/run_phase4_tests.js` -> `server/test_purchase_orders_and_receiving.js`
+  5. `server/run_phase5_tests.js` -> `server/test_storefront_stock_reservation.js`
+  6. `server/run_phase6_tests.js` -> `server/test_payments_and_order_fulfillment.js`
+  7. `server/run_phase7_tests.js` -> `server/test_reservation_expiry_scheduler.js`
+  8. `server/run_phase8_tests.js` -> `server/test_low_stock_alerts_and_notifications.js`
+  9. `server/run_phase9_tests.js` -> `server/test_business_insights_analytics.js`
+  10. `server/run_phase10_tests.js` -> `server/test_browser_ui_e2e.js`
+  11. `server/test_runner.js` -> `server/test_onboarding_baseline.js`
+  12. `server/run_readiness_test.js` -> `server/test_order_management_api.js`
+  13. `server/run_duplicate_test.js` -> `server/test_order_duplicate_handling.js`
+  14. `server/test_phase11c_permissions.cjs` -> `server/test_rbac_and_tenant_isolation.cjs`
+  15. `server/test_phase11d_backend.cjs` -> `server/test_inventory_insights_api.cjs`
+  16. `server/run_rigorous_image_test.cjs` -> `server/test_product_image_rendering.cjs`
+  17. `client/test_phase11a.cjs` -> `client/test_frontend_smoke.cjs`
+  18. `client/test_phase11b.cjs` -> `client/test_frontend_product_routes.cjs`
+- **Protected Source Routes**:
+  - `server/src/routes/testRoutes.js` explicitly retained and untouched (active backend route mounted in `app.js`).
+- **Verification Summary**:
+  - **Stale Reference Check**: Full codebase scan confirmed zero stale references across production code, manifests, and documentation.
+  - **Frontend Production Build**: `npm run build` executed and passed (`1525 modules transformed`, built in 10.08s, exit code 0).
+  - **Permissions & RBAC Suite**: `server/test_rbac_and_tenant_isolation.cjs` executed and passed (exit code 0).
+  - **Inventory & Insights Suite**: `server/test_inventory_insights_api.cjs` executed and passed (exit code 0).
+  - **Contrast Calculator**: `server/calculate_contrast.cjs` executed and verified (32/32 color pairs WCAG AA compliant).
+  - **Destructive Tests Safety Isolation**: The 13 historical test scripts containing `deleteMany({})` collection resets were safely withheld from execution against the live database, as they require a dedicated isolated test environment.
+
+
+
+### Phase 11N: Landing Page Hero Badge Removal
+- **Date**: 2026-10-16
+- **Objective**: Completely remove the top badge/pill ("StockFlow 2.4 • Inventory Management for Modern Businesses") from the landing page hero section.
+- **Modifications**:
+  - `client/src/pages/Landing.jsx`: Removed the inline styled badge container (`<div style={{ display: 'inline-flex', ... }}>`), the decorative indicator dot (`<span>`), and the version badge text.
+  - Adjusted the hero section container padding from `80px 24px 48px` to `64px 24px 48px` to naturally elevate the main heading (*"Manage your inventory with clarity."*) under the navigation bar.
+- **Verification**:
+  - Full codebase scan confirmed zero remaining occurrences of `StockFlow 2.4` and `Inventory Management for Modern Businesses`.
+  - Frontend production build (`npm run build`) succeeded with exit code 0 (`1525 modules transformed`).
+  - Bundle inspection of `client/dist` verified that the hero section begins directly with `<h1>Manage your inventory with clarity.</h1>` with no preceding badge element across all viewport sizes.

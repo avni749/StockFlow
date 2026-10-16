@@ -61,14 +61,8 @@ export default function Landing() {
       </header>
 
       {/* Hero Section - Clean, Human-Written, Restrained */}
-      <section style={{ padding: '80px 24px 48px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <section style={{ padding: '64px 24px 48px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ maxWidth: '780px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '4px', backgroundColor: 'var(--bg-surface-secondary)', border: '1px solid var(--border-color)', marginBottom: '20px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />
-            <span>StockFlow 2.4 &bull; Inventory Management for Modern Businesses</span>
-          </div>
-
           <h1 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', fontWeight: '700', letterSpacing: '-0.03em', lineHeight: '1.2', color: 'var(--text-primary)', marginBottom: '16px' }}>
             Manage your inventory with clarity.
           </h1>

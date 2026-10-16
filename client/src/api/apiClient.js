@@ -1,5 +1,4 @@
-const RAW_URL = import.meta.env.VITE_API_URL || '/api/v1';
-const BASE_URL = RAW_URL.replace(/\/+$/, '');
+const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export const apiFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('stockflow_token');
@@ -13,9 +12,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-
-  const response = await fetch(`${BASE_URL}${cleanEndpoint}`, {
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers
   });
